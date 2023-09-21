@@ -4,13 +4,7 @@ import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "dat.gui";
 
 const scene = new THREE.Scene();
-//scene.background = new THREE.Color(0xff0000)
-
 scene.add(new THREE.AxesHelper(5));
-
-// const light = new THREE.PointLight(0xffffff, 1000)
-// light.position.set(10, 10, 10)
-// scene.add(light)
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -32,15 +26,7 @@ const icosahedronGeometry = new THREE.IcosahedronGeometry(1, 0);
 const planeGeometry = new THREE.PlaneGeometry();
 const torusKnotGeometry = new THREE.TorusKnotGeometry();
 
-// Examples may be wood, or stone. Generally objects that aren't shiny, but are still affected by lighting.
-const material = new THREE.MeshLambertMaterial();
-
-// const texture = new THREE.TextureLoader().load("img/grid.png")
-// material.map = texture
-// const envTexture = new THREE.CubeTextureLoader().load(["img/px_50.png", "img/nx_50.png", "img/py_50.png", "img/ny_50.png", "img/pz_50.png", "img/nz_50.png"])
-// //envTexture.mapping = THREE.CubeReflectionMapping
-// envTexture.mapping = THREE.CubeRefractionMapping
-// material.envMap = envTexture
+const material = new THREE.MeshNormalMaterial();
 
 const cube = new THREE.Mesh(boxGeometry, material);
 cube.position.x = 5;
@@ -79,11 +65,6 @@ const options = {
     BackSide: THREE.BackSide,
     DoubleSide: THREE.DoubleSide,
   },
-  combine: {
-    MultiplyOperation: THREE.MultiplyOperation,
-    MixOperation: THREE.MixOperation,
-    AddOperation: THREE.AddOperation,
-  },
 };
 
 const gui = new GUI();
@@ -103,30 +84,16 @@ materialFolder
   .onChange(() => updateMaterial());
 materialFolder.open();
 
-const data = {
-  color: material.color.getHex(),
-  //emissive: material.emissive.getHex(),
-};
+const meshNormalMaterialFolder = gui.addFolder("THREE.MeshNormalMaterial");
 
-const meshLambertMaterialFolder = gui.addFolder("THREE.MeshLambertMaterial");
-
-meshLambertMaterialFolder.addColor(data, "color").onChange(() => {
-  material.color.setHex(Number(data.color.toString().replace("#", "0x")));
-});
-//meshLambertMaterialFolder.addColor(data, 'emissive').onChange(() => { material.emissive.setHex(Number(data.emissive.toString().replace('#', '0x'))) })
-meshLambertMaterialFolder.add(material, "wireframe");
-meshLambertMaterialFolder.add(material, "wireframeLinewidth", 0, 10);
-//meshLambertMaterialFolder.add(material, 'flatShading').onChange(() => updateMaterial())
-meshLambertMaterialFolder
-  .add(material, "combine", options.combine)
+meshNormalMaterialFolder.add(material, "wireframe");
+meshNormalMaterialFolder
+  .add(material, "flatShading")
   .onChange(() => updateMaterial());
-meshLambertMaterialFolder.add(material, "reflectivity", 0, 1);
-meshLambertMaterialFolder.add(material, "refractionRatio", 0, 1);
-meshLambertMaterialFolder.open();
+meshNormalMaterialFolder.open();
 
 function updateMaterial() {
   material.side = Number(material.side) as THREE.Side;
-  material.combine = Number(material.combine) as THREE.Combine;
   material.needsUpdate = true;
 }
 
