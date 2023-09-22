@@ -4,17 +4,20 @@ import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "dat.gui";
 
 const scene = new THREE.Scene();
+// changes the background color
+scene.background = new THREE.Color(0xff0000);
+
 scene.add(new THREE.AxesHelper(5));
 
-const light = new THREE.PointLight(0xffffff, 1000);
-light.position.set(10, 10, 10);
-scene.add(light);
+// meshLambert needs lighting other wise it is not visible
+const light1 = new THREE.PointLight(0xffffff, 1000);
+light1.position.set(10, 10, 10);
+scene.add(light1);
 
-// to add more specular we add more light
-
-const light2 = new THREE.PointLight(0xffffff, 1000);
-light2.position.set(-10, -10, -10);
-scene.add(light2);
+// // can add another light from backside using -ve
+// const light2 = new THREE.PointLight(0xffffff, 1000);
+// light2.position.set(-10, -10, -10);
+// scene.add(light2);
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -36,15 +39,11 @@ const icosahedronGeometry = new THREE.IcosahedronGeometry(1, 0);
 const planeGeometry = new THREE.PlaneGeometry();
 const torusKnotGeometry = new THREE.TorusKnotGeometry();
 
-// It is useful for simulating shiny objects such as polished wood.
-// It is more computationally-expensive to use than the MeshLambertMaterial,
-// MeshNormalMaterial and MeshBasicMaterial so if performance needs to be considered,
+// Examples may be wood, or stone. Generally objects that aren't shiny, but are still affected by lighting.
+const material = new THREE.MeshLambertMaterial();
 
-// only use this when necessary.
-const material = new THREE.MeshPhongMaterial();
-
-const texture = new THREE.TextureLoader().load("img/grid.png");
-material.map = texture;
+// const texture = new THREE.TextureLoader().load("img/grid.png");
+// material.map = texture;
 const envTexture = new THREE.CubeTextureLoader().load([
   "img/px_50.png",
   "img/nx_50.png",
@@ -54,7 +53,7 @@ const envTexture = new THREE.CubeTextureLoader().load([
   "img/nz_50.png",
 ]);
 envTexture.mapping = THREE.CubeReflectionMapping;
-//envTexture.mapping = THREE.CubeRefractionMapping
+envTexture.mapping = THREE.CubeRefractionMapping;
 material.envMap = envTexture;
 
 const cube = new THREE.Mesh(boxGeometry, material);
@@ -121,31 +120,27 @@ materialFolder.open();
 const data = {
   color: material.color.getHex(),
   emissive: material.emissive.getHex(),
-  specular: material.specular.getHex(), // used for shine
+  // emissive doesn't need light. so if we use emissive we can omit light for meshLambert
+  // basic and normal is emissive by default
 };
 
-const meshPhongMaterialFolder = gui.addFolder("THREE.MeshPhongMaterial");
-meshPhongMaterialFolder.addColor(data, "color").onChange(() => {
+const meshLambertMaterialFolder = gui.addFolder("THREE.MeshLambertMaterial");
+
+meshLambertMaterialFolder.addColor(data, "color").onChange(() => {
   material.color.setHex(Number(data.color.toString().replace("#", "0x")));
 });
-meshPhongMaterialFolder.addColor(data, "emissive").onChange(() => {
+meshLambertMaterialFolder.addColor(data, "emissive").onChange(() => {
   material.emissive.setHex(Number(data.emissive.toString().replace("#", "0x")));
 });
-meshPhongMaterialFolder.addColor(data, "specular").onChange(() => {
-  material.specular.setHex(Number(data.specular.toString().replace("#", "0x")));
-}); // used to add color to shine
-meshPhongMaterialFolder.add(material, "shininess", 0, 1024); //  used to increase or decrease shine
-meshPhongMaterialFolder.add(material, "wireframe");
-meshPhongMaterialFolder.add(material, "wireframeLinewidth", 0, 10);
-meshPhongMaterialFolder
-  .add(material, "flatShading")
-  .onChange(() => updateMaterial());
-meshPhongMaterialFolder
+meshLambertMaterialFolder.add(material, "wireframe");
+meshLambertMaterialFolder.add(material, "wireframeLinewidth", 0, 10);
+//meshLambertMaterialFolder.add(material, 'flatShading').onChange(() => updateMaterial())
+meshLambertMaterialFolder
   .add(material, "combine", options.combine)
   .onChange(() => updateMaterial());
-meshPhongMaterialFolder.add(material, "reflectivity", 0, 1);
-meshPhongMaterialFolder.add(material, "refractionRatio", 0, 1);
-meshPhongMaterialFolder.open();
+meshLambertMaterialFolder.add(material, "reflectivity", 0, 1);
+meshLambertMaterialFolder.add(material, "refractionRatio", 0, 1);
+meshLambertMaterialFolder.open();
 
 function updateMaterial() {
   material.side = Number(material.side) as THREE.Side;
