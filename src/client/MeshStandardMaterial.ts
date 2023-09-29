@@ -34,17 +34,39 @@ const torusKnotGeometry = new THREE.TorusKnotGeometry();
 
 // It creates a more realistic appearance than the MeshLambertMaterial or the MeshPhongMaterial.
 // It is also more computationally expensive.
-const material = new THREE.MeshStandardMaterial();
 
-// const texture = new THREE.TextureLoader().load('img/grid.png')
-// material.map = texture
-// const pmremGenerator = new THREE.PMREMGenerator(renderer)
-// const envTexture = new THREE.CubeTextureLoader().load(['img/px_50.png','img/nx_50.png','img/py_50.png','img/ny_50.png','img/pz_50.png','img/nz_50.png'],
-//     () => {
-//         material.envMap = pmremGenerator.fromCubemap(envTexture).texture
-//         pmremGenerator.dispose()
-//     }
-// )
+const material: THREE.MeshStandardMaterial = new THREE.MeshStandardMaterial();
+
+// const texture = new THREE.TextureLoader().load("img/grid.png");
+// material.map = texture;
+// const pmremGenerator = new THREE.PMREMGenerator(renderer);
+// const envTexture = new THREE.CubeTextureLoader().load(
+//   [
+//     "img/px_50.png",
+//     "img/nx_50.png",
+//     "img/py_50.png",
+//     "img/ny_50.png",
+//     "img/pz_50.png",
+//     "img/nz_50.png",
+//   ],
+//   () => {
+//     material.envMap = pmremGenerator.fromCubemap(envTexture).texture;
+//     pmremGenerator.dispose();
+//   }
+// );
+
+const envTexture = new THREE.CubeTextureLoader().load([
+  "img/px_50.png",
+  "img/nx_50.png",
+  "img/py_50.png",
+  "img/ny_50.png",
+  "img/pz_50.png",
+  "img/nz_50.png",
+]);
+
+envTexture.mapping = THREE.CubeReflectionMapping;
+//envTexture.mapping = THREE.CubeRefractionMapping;
+material.envMap = envTexture;
 
 const cube = new THREE.Mesh(boxGeometry, material);
 cube.position.x = 5;
@@ -119,8 +141,9 @@ meshStandardMaterialFolder.add(material, "wireframe");
 meshStandardMaterialFolder
   .add(material, "flatShading")
   .onChange(() => updateMaterial());
-//meshStandardMaterialFolder.add(material, 'roughness', 0, 1)
-//meshStandardMaterialFolder.add(material, 'metalness', 0, 1)
+meshStandardMaterialFolder.add(material, "roughness", 0, 1); // gives roughness to 3d object.
+meshStandardMaterialFolder.add(material, "metalness", 0, 1); // gives metal or shine to 3d objects
+// when we start increasing metalness we lose light
 meshStandardMaterialFolder.open();
 
 function updateMaterial() {
