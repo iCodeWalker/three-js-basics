@@ -6,6 +6,7 @@ import { GUI } from "dat.gui";
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
 
+// The light have no affect.
 const light = new THREE.PointLight(0xffffff, 1000);
 light.position.set(10, 10, 10);
 scene.add(light);
@@ -30,49 +31,57 @@ const icosahedronGeometry = new THREE.IcosahedronGeometry(1, 0);
 const planeGeometry = new THREE.PlaneGeometry();
 const torusKnotGeometry = new THREE.TorusKnotGeometry();
 
-// It is an extension of the MeshStandardMaterial which gives more reflectivity options.
+// matcap renders fast.
 
-const material = new THREE.MeshPhysicalMaterial({});
-material.reflectivity = 0;
-material.transmission = 1.0;
-material.roughness = 0.2;
-material.metalness = 0;
-material.clearcoat = 0.3;
-material.clearcoatRoughness = 0.25;
-material.color = new THREE.Color(0xffffff);
-material.ior = 1.2;
-material.thickness = 10.0;
+// It is like meshbasic and mesh normal, High Performant. Because it is not doing much more than
+// just mapping the image onto the normal.
 
-// const texture = new THREE.TextureLoader().load('img/grid.png')
-// material.map = texture
+// can be used when we need to impose image.
 
-const pmremGenerator = new THREE.PMREMGenerator(renderer);
-const envTexture = new THREE.CubeTextureLoader().load(
-  [
-    "img/px_50.png",
-    "img/nx_50.png",
-    "img/py_50.png",
-    "img/ny_50.png",
-    "img/pz_50.png",
-    "img/nz_50.png",
-  ],
-  () => {
-    material.envMap = pmremGenerator.fromCubemap(envTexture).texture;
-    pmremGenerator.dispose();
-    scene.background = material.envMap;
-  }
-);
+// light is not affected.
+
+// all shading and shining comes from the image.
+
+// -----------------------------------------------
+
+// Very high performance and very effective very quickly without needing to set lights or
+// even other specular
+
+// -----------------------------------------------
+
+const material = new THREE.MeshMatcapMaterial();
+
+const texture = new THREE.TextureLoader().load("img/grid.png");
+material.map = texture;
+
+// We don't get envmap with matcap material
+
+// const envTexture = new THREE.CubeTextureLoader().load(["img/px_50.png", "img/nx_50.png", "img/py_50.png", "img/ny_50.png", "img/pz_50.png", "img/nz_50.png"])
+// //envTexture.mapping = THREE.CubeReflectionMapping
+// envTexture.mapping = THREE.CubeRefractionMapping
+// material.envMap = envTexture
+
+//const matcapTexture = new THREE.TextureLoader().load("img/matcap-opal.png");
+//const matcapTexture = new THREE.TextureLoader().load("img/matcap-crystal.png");
+const matcapTexture = new THREE.TextureLoader().load("img/matcap-gold.png");
+//const matcapTexture = new THREE.TextureLoader().load(
+//"img/matcap-red-light.png"
+//);
+// const matcapTexture = new THREE.TextureLoader().load(
+//   "img/matcap-green-yellow-pink.png"
+// );
+material.matcap = matcapTexture;
 
 const cube = new THREE.Mesh(boxGeometry, material);
 cube.position.x = 5;
 scene.add(cube);
 
 const sphere = new THREE.Mesh(sphereGeometry, material);
-sphere.position.x = 0;
+sphere.position.x = 3;
 scene.add(sphere);
 
 const icosahedron = new THREE.Mesh(icosahedronGeometry, material);
-icosahedron.position.x = 3;
+icosahedron.position.x = 0;
 scene.add(icosahedron);
 
 const plane = new THREE.Mesh(planeGeometry, material);
@@ -121,34 +130,16 @@ materialFolder.open();
 
 const data = {
   color: material.color.getHex(),
-  emissive: material.emissive.getHex(),
 };
 
-const meshPhysicalMaterialFolder = gui.addFolder("THREE.MeshPhysicalMaterial");
-
-meshPhysicalMaterialFolder.addColor(data, "color").onChange(() => {
+const meshMatcapMaterialFolder = gui.addFolder("THREE.MeshMatcapMaterial");
+meshMatcapMaterialFolder.addColor(data, "color").onChange(() => {
   material.color.setHex(Number(data.color.toString().replace("#", "0x")));
 });
-meshPhysicalMaterialFolder.addColor(data, "emissive").onChange(() => {
-  material.emissive.setHex(Number(data.emissive.toString().replace("#", "0x")));
-});
-
-meshPhysicalMaterialFolder.add(material, "wireframe");
-meshPhysicalMaterialFolder
+meshMatcapMaterialFolder
   .add(material, "flatShading")
   .onChange(() => updateMaterial());
-
-// in MeshPhysicalMaterial we get back the option of reflectivity and
-meshPhysicalMaterialFolder.add(material, "reflectivity", 0, 1);
-
-meshPhysicalMaterialFolder.add(material, "roughness", 0, 1);
-meshPhysicalMaterialFolder.add(material, "metalness", 0, 1);
-meshPhysicalMaterialFolder.add(material, "clearcoat", 0, 1, 0.01);
-meshPhysicalMaterialFolder.add(material, "clearcoatRoughness", 0, 1, 0.01);
-meshPhysicalMaterialFolder.add(material, "transmission", 0, 1, 0.01);
-meshPhysicalMaterialFolder.add(material, "ior", 1.0, 2.333);
-meshPhysicalMaterialFolder.add(material, "thickness", 0, 10.0);
-meshPhysicalMaterialFolder.open();
+meshMatcapMaterialFolder.open();
 
 function updateMaterial() {
   material.side = Number(material.side) as THREE.Side;
@@ -157,9 +148,6 @@ function updateMaterial() {
 
 function animate() {
   requestAnimationFrame(animate);
-
-  // torusKnot.rotation.x += 0.01
-  // torusKnot.rotation.y += 0.01
 
   render();
 
