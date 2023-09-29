@@ -6,7 +6,8 @@ import { GUI } from "dat.gui";
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
 
-const light = new THREE.PointLight(0xffffff, 500);
+// The light have no affect.
+const light = new THREE.PointLight(0xffffff, 1000);
 light.position.set(10, 10, 10);
 scene.add(light);
 
@@ -30,25 +31,46 @@ const icosahedronGeometry = new THREE.IcosahedronGeometry(1, 0);
 const planeGeometry = new THREE.PlaneGeometry();
 const torusKnotGeometry = new THREE.TorusKnotGeometry();
 
-const threeTone = new THREE.TextureLoader().load("img/threeTone.jpg");
-// to have tone effect we have to use THREE.NearestFilter;
-threeTone.minFilter = THREE.NearestFilter;
-threeTone.magFilter = THREE.NearestFilter;
+// matcap renders fast.
 
-const fourTone = new THREE.TextureLoader().load("img/fourTone.jpg");
-fourTone.minFilter = THREE.NearestFilter;
-fourTone.magFilter = THREE.NearestFilter;
+// It is like meshbasic and mesh normal, High Performant. Because it is not doing much more than
+// just mapping the image onto the normal.
 
-const fiveTone = new THREE.TextureLoader().load("img/fiveTone.jpg");
-fiveTone.minFilter = THREE.NearestFilter;
-fiveTone.magFilter = THREE.NearestFilter;
+// can be used when we need to impose image.
 
-// Toon shading or Cel shading is a type of non-photorealistic rendering technique designed
-// to make 3D computer graphics appear more cartoonish by using less shading color
-// instead of a smooth gradient effect.
+// light is not affected.
 
-// Light is needed it is not self-luminating
-const material: THREE.MeshToonMaterial = new THREE.MeshToonMaterial();
+// all shading and shining comes from the image.
+
+// -----------------------------------------------
+
+// Very high performance and very effective very quickly without needing to set lights or
+// even other specular
+
+// -----------------------------------------------
+
+const material = new THREE.MeshMatcapMaterial();
+
+const texture = new THREE.TextureLoader().load("img/grid.png");
+material.map = texture;
+
+// We don't get envmap with matcap material
+
+// const envTexture = new THREE.CubeTextureLoader().load(["img/px_50.png", "img/nx_50.png", "img/py_50.png", "img/ny_50.png", "img/pz_50.png", "img/nz_50.png"])
+// //envTexture.mapping = THREE.CubeReflectionMapping
+// envTexture.mapping = THREE.CubeRefractionMapping
+// material.envMap = envTexture
+
+//const matcapTexture = new THREE.TextureLoader().load("img/matcap-opal.png");
+//const matcapTexture = new THREE.TextureLoader().load("img/matcap-crystal.png");
+const matcapTexture = new THREE.TextureLoader().load("img/matcap-gold.png");
+//const matcapTexture = new THREE.TextureLoader().load(
+//"img/matcap-red-light.png"
+//);
+// const matcapTexture = new THREE.TextureLoader().load(
+//   "img/matcap-green-yellow-pink.png"
+// );
+material.matcap = matcapTexture;
 
 const cube = new THREE.Mesh(boxGeometry, material);
 cube.position.x = 5;
@@ -87,30 +109,9 @@ const options = {
     BackSide: THREE.BackSide,
     DoubleSide: THREE.DoubleSide,
   },
-  gradientMap: {
-    Default: null,
-    threeTone: "threeTone",
-    fourTone: "fourTone",
-    fiveTone: "fiveTone",
-  },
 };
 
 const gui = new GUI();
-
-const data = {
-  lightColor: light.color.getHex(),
-  color: material.color.getHex(),
-  gradientMap: "threeTone",
-};
-
-material.gradientMap = threeTone;
-
-const lightFolder = gui.addFolder("THREE.Light");
-lightFolder.addColor(data, "lightColor").onChange(() => {
-  light.color.setHex(Number(data.lightColor.toString().replace("#", "0x")));
-});
-lightFolder.add(light, "intensity", 0, 2000);
-
 const materialFolder = gui.addFolder("THREE.Material");
 materialFolder
   .add(material, "transparent")
@@ -125,23 +126,23 @@ materialFolder.add(material, "visible");
 materialFolder
   .add(material, "side", options.side)
   .onChange(() => updateMaterial());
-//materialFolder.open()
+materialFolder.open();
 
-const meshToonMaterialFolder = gui.addFolder("THREE.MeshToonMaterial");
-meshToonMaterialFolder.addColor(data, "color").onChange(() => {
+const data = {
+  color: material.color.getHex(),
+};
+
+const meshMatcapMaterialFolder = gui.addFolder("THREE.MeshMatcapMaterial");
+meshMatcapMaterialFolder.addColor(data, "color").onChange(() => {
   material.color.setHex(Number(data.color.toString().replace("#", "0x")));
 });
-
-//shininess, specular and flatShading no longer supported in MeshToonMaterial
-
-meshToonMaterialFolder
-  .add(data, "gradientMap", options.gradientMap)
+meshMatcapMaterialFolder
+  .add(material, "flatShading")
   .onChange(() => updateMaterial());
-meshToonMaterialFolder.open();
+meshMatcapMaterialFolder.open();
 
 function updateMaterial() {
   material.side = Number(material.side) as THREE.Side;
-  material.gradientMap = eval(data.gradientMap as string);
   material.needsUpdate = true;
 }
 
