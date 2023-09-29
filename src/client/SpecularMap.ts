@@ -23,21 +23,32 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.screenSpacePanning = true; //so that panning up and down doesn't zoom in/out
+controls.screenSpacePanning = true; // default is now true since three r118. Used so that panning up and down doesn't zoom in/out
 //controls.addEventListener('change', render)
 
+// const planeGeometry = new THREE.PlaneGeometry(); //3.6, 1.8)
+// change shape of plane geometry for specular map.
 const planeGeometry = new THREE.PlaneGeometry(3.6, 1.8);
 
-// The roughnessMap and metalnessMap are the specularMap equivalents
-// for the MeshStandardMaterial and MeshPhysicalMaterial materials.
+const material = new THREE.MeshPhongMaterial();
 
-// gives us more ways to manage the reflection
-const material = new THREE.MeshPhysicalMaterial({});
+// On texture mapping the specular is beneath the image.
 
-//const texture = new THREE.TextureLoader().load("img/grid.png")
+//const texture = new THREE.TextureLoader().load("img/grid.png");
+
+// Right use of specular map
 const texture = new THREE.TextureLoader().load("img/worldColour.5400x2700.jpg");
 material.map = texture;
-// const envTexture = new THREE.CubeTextureLoader().load(["img/px_50.png", "img/nx_50.png", "img/py_50.png", "img/ny_50.png", "img/pz_50.png", "img/nz_50.png"])
+
+// on environment mapping the specular is on the top of the images
+// const envTexture = new THREE.CubeTextureLoader().load([
+//   "img/px_50.png",
+//   "img/nx_50.png",
+//   "img/py_50.png",
+//   "img/ny_50.png",
+//   "img/pz_50.png",
+//   "img/nz_50.png",
+// ]);
 const envTexture = new THREE.CubeTextureLoader().load([
   "img/px_eso0932a.jpg",
   "img/nx_eso0932a.jpg",
@@ -49,15 +60,21 @@ const envTexture = new THREE.CubeTextureLoader().load([
 envTexture.mapping = THREE.CubeReflectionMapping;
 material.envMap = envTexture;
 
-//const specularTexture = new THREE.TextureLoader().load("img/grayscale-test.png")
+// const specularTexture = new THREE.TextureLoader().load(
+//  "img/grayscale-test.png"
+//);
+
+// ------ White is full specular and black is no specular
+
+// The SpecularMap is a texture image that affects the specular surface
+//  highlight on MeshLambertMaterial and MeshPhongMaterial materials.
+
+// To adjust the intensity of the specular surface highlight,
+// on MeshPhongMaterial, use the specular and shininess properties.
 const specularTexture = new THREE.TextureLoader().load("img/earthSpecular.jpg");
+material.specularMap = specularTexture;
 
-// using both rouhness and metalness map we can have shine on both areas.
-
-material.roughnessMap = specularTexture;
-material.metalnessMap = specularTexture;
-
-const plane: THREE.Mesh = new THREE.Mesh(planeGeometry, material);
+const plane = new THREE.Mesh(planeGeometry, material);
 scene.add(plane);
 
 window.addEventListener("resize", onWindowResize, false);
@@ -76,6 +93,11 @@ const options = {
     FrontSide: THREE.FrontSide,
     BackSide: THREE.BackSide,
     DoubleSide: THREE.DoubleSide,
+  },
+  combine: {
+    MultiplyOperation: THREE.MultiplyOperation,
+    MixOperation: THREE.MixOperation,
+    AddOperation: THREE.AddOperation,
   },
 };
 const gui = new GUI();
@@ -97,32 +119,34 @@ materialFolder
 const data = {
   color: material.color.getHex(),
   emissive: material.emissive.getHex(),
+  specular: material.specular.getHex(),
 };
 
-const meshPhysicalMaterialFolder = gui.addFolder(
-  "THREE.meshPhysicalMaterialFolder"
-);
+const meshPhongMaterialFolder = gui.addFolder("THREE.MeshPhongMaterial");
 
-meshPhysicalMaterialFolder.addColor(data, "color").onChange(() => {
+meshPhongMaterialFolder.addColor(data, "color").onChange(() => {
   material.color.setHex(Number(data.color.toString().replace("#", "0x")));
 });
-meshPhysicalMaterialFolder.addColor(data, "emissive").onChange(() => {
+meshPhongMaterialFolder.addColor(data, "emissive").onChange(() => {
   material.emissive.setHex(Number(data.emissive.toString().replace("#", "0x")));
 });
-meshPhysicalMaterialFolder.add(material, "wireframe");
-meshPhysicalMaterialFolder
+meshPhongMaterialFolder.addColor(data, "specular").onChange(() => {
+  material.specular.setHex(Number(data.specular.toString().replace("#", "0x")));
+});
+meshPhongMaterialFolder.add(material, "shininess", 0, 1024);
+meshPhongMaterialFolder.add(material, "wireframe");
+meshPhongMaterialFolder
   .add(material, "flatShading")
   .onChange(() => updateMaterial());
-meshPhysicalMaterialFolder.add(material, "reflectivity", 0, 1);
-meshPhysicalMaterialFolder.add(material, "envMapIntensity", 0, 1);
-meshPhysicalMaterialFolder.add(material, "roughness", 0, 1);
-meshPhysicalMaterialFolder.add(material, "metalness", 0, 1);
-meshPhysicalMaterialFolder.add(material, "clearcoat", 0, 1, 0.01);
-meshPhysicalMaterialFolder.add(material, "clearcoatRoughness", 0, 1, 0.01);
-meshPhysicalMaterialFolder.open();
+meshPhongMaterialFolder
+  .add(material, "combine", options.combine)
+  .onChange(() => updateMaterial());
+meshPhongMaterialFolder.add(material, "reflectivity", 0, 1);
+meshPhongMaterialFolder.open();
 
 function updateMaterial() {
   material.side = Number(material.side) as THREE.Side;
+  material.combine = Number(material.combine) as THREE.Combine;
   material.needsUpdate = true;
 }
 
