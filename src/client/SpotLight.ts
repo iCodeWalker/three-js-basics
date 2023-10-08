@@ -1,4 +1,9 @@
-// The Spot Light Shadow uses a PerspectiveCamera frustum to calculate the shadows.
+// Spot light : it is like point light, but we have more control over the direction and the angles.
+
+// distance - Maximum range of the light. Default is 0 (no limit).
+// angle - Maximum angle of light dispersion from its direction whose upper bound is Math.PI/2.
+// penumbra - Percent of the spotlight cone that is attenuated due to penumbra. Takes values between zero and 1. Default is zero.
+// decay - The amount the light dims along the distance of the light.
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -8,16 +13,10 @@ import { GUI } from "dat.gui";
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
 
-const light = new THREE.SpotLight(0xffffff, 10);
-light.castShadow = true;
-light.shadow.mapSize.width = 512; // to have a more smoother shadow we can increase mapSize
-light.shadow.mapSize.height = 512;
-light.shadow.camera.near = 0.5;
-light.shadow.camera.far = 100;
+const light = new THREE.SpotLight(0xffffff, 2);
 scene.add(light);
 
-// const helper = new THREE.SpotLightHelper(light);
-const helper = new THREE.CameraHelper(light.shadow.camera);
+const helper = new THREE.SpotLightHelper(light);
 scene.add(helper);
 
 const camera = new THREE.PerspectiveCamera(
@@ -30,21 +29,14 @@ camera.position.z = 7;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // have softness in  shadow, have clear shadow.
-
-// renderer.shadowMap.type = THREE.BasicShadowMap; // no softness on the shadow, have pixelated shadow.
-// renderer.shadowMap.type = THREE.PCFShadowMap // less smoother than PCTSoft
-// renderer.shadowMap.type = THREE.VSMShadowMap;
 document.body.appendChild(renderer.domElement);
 
 new OrbitControls(camera, renderer.domElement);
 
-const planeGeometry = new THREE.PlaneGeometry(100, 20);
+const planeGeometry = new THREE.PlaneGeometry(100, 10);
 const plane = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial());
 plane.rotateX(-Math.PI / 2);
 plane.position.y = -1.75;
-plane.receiveShadow = true; // plane recieves shadow
 scene.add(plane);
 
 const torusGeometry = [
@@ -84,20 +76,6 @@ torus[2].position.x = 0;
 torus[3].position.x = 4;
 torus[4].position.x = 8;
 
-// To cast shadow on plane
-torus[0].castShadow = true;
-torus[1].castShadow = true;
-torus[2].castShadow = true;
-torus[3].castShadow = true;
-torus[4].castShadow = true;
-
-// so our 3d objects also receives shadow. (Shadow visible on 3d object also)
-torus[0].receiveShadow = true;
-torus[1].receiveShadow = true;
-torus[2].receiveShadow = true;
-torus[3].receiveShadow = true;
-torus[4].receiveShadow = true;
-
 scene.add(torus[0]);
 scene.add(torus[1]);
 scene.add(torus[2]);
@@ -118,8 +96,6 @@ document.body.appendChild(stats.dom);
 const data = {
   color: light.color.getHex(),
   mapsEnabled: true,
-  shadowMapSizeWidth: 512,
-  shadowMapSizeHeight: 512,
 };
 
 const gui = new GUI();
@@ -127,36 +103,17 @@ const lightFolder = gui.addFolder("THREE.Light");
 lightFolder.addColor(data, "color").onChange(() => {
   light.color.setHex(Number(data.color.toString().replace("#", "0x")));
 });
-lightFolder.add(light, "intensity", 0, 20, 0.01);
-
+lightFolder.add(light, "intensity", 0, 10, 0.01);
+lightFolder.open();
 const spotLightFolder = gui.addFolder("THREE.SpotLight");
 spotLightFolder.add(light, "distance", 0, 100, 0.01);
 spotLightFolder.add(light, "decay", 0, 4, 0.1);
 spotLightFolder.add(light, "angle", 0, 1, 0.1);
 spotLightFolder.add(light, "penumbra", 0, 1, 0.1);
-spotLightFolder
-  .add(light.shadow.camera, "near", 0.1, 100)
-  .onChange(() => light.shadow.camera.updateProjectionMatrix());
-spotLightFolder
-  .add(light.shadow.camera, "far", 0.1, 100)
-  .onChange(() => light.shadow.camera.updateProjectionMatrix());
-spotLightFolder
-  .add(data, "shadowMapSizeWidth", [256, 512, 1024, 2048, 4096])
-  .onChange(() => updateShadowMapSize());
-spotLightFolder
-  .add(data, "shadowMapSizeHeight", [256, 512, 1024, 2048, 4096])
-  .onChange(() => updateShadowMapSize());
 spotLightFolder.add(light.position, "x", -50, 50, 0.01);
 spotLightFolder.add(light.position, "y", -50, 50, 0.01);
 spotLightFolder.add(light.position, "z", -50, 50, 0.01);
 spotLightFolder.open();
-
-function updateShadowMapSize() {
-  light.shadow.mapSize.width = data.shadowMapSizeWidth;
-  light.shadow.mapSize.height = data.shadowMapSizeHeight;
-  (light.shadow.map as any) = null;
-}
-
 const meshesFolder = gui.addFolder("Meshes");
 meshesFolder.add(data, "mapsEnabled").onChange(() => {
   material.forEach((m) => {
