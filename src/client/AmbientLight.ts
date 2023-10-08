@@ -54,11 +54,12 @@ document.body.appendChild(renderer.domElement);
 
 new OrbitControls(camera, renderer.domElement);
 
-// const planeGeometry = new THREE.PlaneGeometry(20, 10)//, 360, 180)
-// const plane = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial())
-// plane.rotateX(-Math.PI / 2)
-// //plane.position.y = -1.75
-// scene.add(plane)
+// Plane will hide out the objects, objects will be visible only if map is Enabled
+const planeGeometry = new THREE.PlaneGeometry(20, 10); //, 360, 180)
+const plane = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial());
+plane.rotateX(-Math.PI / 2);
+//plane.position.y = -1.75
+scene.add(plane);
 
 const torusGeometry = [
   new THREE.TorusGeometry(),

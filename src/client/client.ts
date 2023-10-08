@@ -1,3 +1,8 @@
+// Imagine the directional light as an OrthographicCamera, rather than a PerspectiveCamera.
+// The light rays from a DirectionalLight are parallel in the direction.
+
+// The directional light is similar to embient light, except it also supports direction.
+
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
@@ -8,6 +13,9 @@ scene.add(new THREE.AxesHelper(5));
 
 const light = new THREE.DirectionalLight(0xffffff, Math.PI);
 scene.add(light);
+
+// we can use these helpers. these is optional.
+// It is usefull to help us visulaise the boundaries and what it is doing.
 
 const helper = new THREE.DirectionalLightHelper(light);
 scene.add(helper);
@@ -41,7 +49,7 @@ const torusGeometry = [
 ];
 
 const material = [
-  new THREE.MeshBasicMaterial(),
+  new THREE.MeshBasicMaterial(), ////--> direction does not affect the self illuminating
   new THREE.MeshLambertMaterial(),
   new THREE.MeshPhongMaterial(),
   new THREE.MeshPhysicalMaterial({}),
@@ -68,6 +76,16 @@ torus[1].position.x = -4;
 torus[2].position.x = 0;
 torus[3].position.x = 4;
 torus[4].position.x = 8;
+
+// by default the target for light is 0,0,0
+
+// but we can change it useing target.
+
+// light.target = torus[0];
+
+// if we want to add a target, that does not exist, than we can use co-ordinates.
+light.target.position.set(0, 10, 0); // -->  this have no impact, unless we add light.target to scene
+scene.add(light.target);
 
 scene.add(torus[0]);
 scene.add(torus[1]);
@@ -119,7 +137,8 @@ meshesFolder.add(data, "mapsEnabled").onChange(() => {
 function animate() {
   requestAnimationFrame(animate);
 
-  //helper.update()
+  // To point the light helper to another target we nedd to update the helper.
+  helper.update();
 
   torus.forEach((t) => {
     t.rotation.y += 0.01;
