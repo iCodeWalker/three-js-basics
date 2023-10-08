@@ -1,7 +1,7 @@
-// Point light : A light that gets emitted from a single point in all directions
+// Hemisphere light is like having two directional lights, one pointing up and one pointing down.
 
-// distance - Maximum range of the light. Default is 0 (no limit).
-// decay - The amount the light dims along the distance of the light. Default is 1.
+// The Threejs Hemisphere light is very like a directional light but also with settings to project
+// the light in the reverse direction.
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -11,11 +11,11 @@ import { GUI } from "dat.gui";
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
 
-// light is emiting from 0,0,0 in all directions
-const light = new THREE.PointLight(0xffffff, 2);
+// The most common use case of the hemisphere light is for simulating a sky color and a ground color
+const light = new THREE.HemisphereLight(0xffffff, 0xffffff, Math.PI);
 scene.add(light);
 
-const helper = new THREE.PointLightHelper(light);
+const helper = new THREE.HemisphereLightHelper(light, 5);
 scene.add(helper);
 
 const camera = new THREE.PerspectiveCamera(
@@ -32,11 +32,11 @@ document.body.appendChild(renderer.domElement);
 
 new OrbitControls(camera, renderer.domElement);
 
-const planeGeometry = new THREE.PlaneGeometry(20, 10); //, 360, 180)
-const plane = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial());
-plane.rotateX(-Math.PI / 2);
-//plane.position.y = -1.75
-scene.add(plane);
+// const planeGeometry = new THREE.PlaneGeometry(100, 10)
+// const plane = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial())
+// plane.rotateX(-Math.PI / 2)
+// //plane.position.y = -1.75
+// scene.add(plane)
 
 const torusGeometry = [
   new THREE.TorusGeometry(),
@@ -92,8 +92,10 @@ function onWindowResize() {
 const stats = new Stats();
 document.body.appendChild(stats.dom);
 
+// hemisphere light has an extra property: groundColor
 const data = {
   color: light.color.getHex(),
+  groundColor: light.groundColor.getHex(),
   mapsEnabled: true,
 };
 
@@ -102,15 +104,20 @@ const lightFolder = gui.addFolder("THREE.Light");
 lightFolder.addColor(data, "color").onChange(() => {
   light.color.setHex(Number(data.color.toString().replace("#", "0x")));
 });
-lightFolder.add(light, "intensity", 0, 10, 0.01);
+lightFolder.add(light, "intensity", 0, Math.PI * 2, 0.01);
+lightFolder.open();
 
-const pointLightFolder = gui.addFolder("THREE.PointLight");
-pointLightFolder.add(light, "distance", 0, 100, 0.01);
-pointLightFolder.add(light, "decay", 0, 4, 0.1);
-pointLightFolder.add(light.position, "x", -50, 50, 0.01);
-pointLightFolder.add(light.position, "y", -50, 50, 0.01);
-pointLightFolder.add(light.position, "z", -50, 50, 0.01);
-pointLightFolder.open();
+const hemisphereLightFolder = gui.addFolder("THREE.HemisphereLight");
+hemisphereLightFolder.addColor(data, "groundColor").onChange(() => {
+  light.groundColor.setHex(
+    Number(data.groundColor.toString().replace("#", "0x"))
+  );
+});
+
+hemisphereLightFolder.add(light.position, "x", -100, 100, 0.01);
+hemisphereLightFolder.add(light.position, "y", -100, 100, 0.01);
+hemisphereLightFolder.add(light.position, "z", -100, 100, 0.01);
+hemisphereLightFolder.open();
 
 const meshesFolder = gui.addFolder("Meshes");
 meshesFolder.add(data, "mapsEnabled").onChange(() => {
@@ -127,7 +134,7 @@ meshesFolder.add(data, "mapsEnabled").onChange(() => {
 function animate() {
   requestAnimationFrame(animate);
 
-  //helper.update()
+  helper.update();
 
   torus.forEach((t) => {
     t.rotation.y += 0.01;
