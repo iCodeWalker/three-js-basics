@@ -1,7 +1,9 @@
-// Orbit controls allow the camera to orbit around a target.
+// TrackballControls is similar to the OrbitControls. However, it does not maintain a constant
+// camera up vector. That means that the camera can orbit past its polar extremes.
+// It won't flip to stay the right side up
 
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 
 const scene = new THREE.Scene();
@@ -19,74 +21,49 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const controls = new OrbitControls(camera, renderer.domElement);
+// when we click and rotate the mouse the up axis also gets changed
 
-// Never changes camera lookat manually, always use target.set,
-// if control.update is not in animate loop, than we have to call it manually
-
-// while using this camera will reset to 0,0,0 whenever we change the view using mouse
-// camera.lookAt(0.5, 0.5, 0.5)
-// controls.target.set(0.5, 0.5, 0.5); // this will not reset the camera to default of 0,0,0
-// controls.update() // will call it in animation lop
-
+const controls = new TrackballControls(camera, renderer.domElement);
 controls.addEventListener("change", () => console.log("Controls Change"));
-
 // "start" event happens when we click down the mouse button
 controls.addEventListener("start", () => console.log("Controls Start Event"));
 
 // "end" event happens when we lift up the mouse button
 controls.addEventListener("end", () => console.log("Controls End Event"));
 
-// "rotate" : rotates the object in loop
-// controls.autoRotate = true;
+// disables the controller
+// controls.enabled = false;
 
-// "autoRotateSpeed" : controls the speed of rotation
-// controls.autoRotateSpeed = 10;
+// controls the rotate speed.
+controls.rotateSpeed = 1.0;
 
-// "enableDamping" : when we rotate it continues to be in motion for some time.
-// gives a good animation behaviour
-// controls.enableDamping = true;
+// controls the zooming speed
+controls.zoomSpeed = 1.2;
 
-// "dampingFactor" : "decides the speed of damping"
-// controls.dampingFactor = .01
+// controls the speed of moving of 3d object, when we right click mouse button and move it.
+controls.panSpeed = 0.8;
 
-// Orbital control using key works in older versions
-// controls.enableKeys = true //older versions
+// key controls
+// controls.keys = ['KeyA', 'KeyS', 'KeyD']
 
-// use for model controls
-controls.listenToKeyEvents(document.body);
-controls.keys = {
-  LEFT: "ArrowLeft", //left arrow // KeyA
-  UP: "ArrowUp", // up arrow // KeyW
-  RIGHT: "ArrowRight", // right arrow // KeyD
-  BOTTOM: "ArrowDown", // down arrow // KeyS
-};
-// use for mouse controls
-// Dolly = "zooming"
-// Pan = "moving object"
-controls.mouseButtons = {
-  LEFT: THREE.MOUSE.ROTATE,
-  MIDDLE: THREE.MOUSE.DOLLY,
-  RIGHT: THREE.MOUSE.PAN,
-};
+// To control moving of 3d object
+// controls.noPan = true //default false
 
-// Controls for mobile
-controls.touches = {
-  ONE: THREE.TOUCH.ROTATE,
-  TWO: THREE.TOUCH.DOLLY_PAN,
-};
-// controls.screenSpacePanning = true
-// azimuth is "how much we can rotate the object in horizontal direction in one go"
-controls.minAzimuthAngle = -Math.PI / 2; //0;
-controls.maxAzimuthAngle = Math.PI / 2;
+// To control rotating of 3d object
+// controls.noRotate = true //default false
 
-// Polar is "how much we can rotate the object in vertical direction in one go"
-controls.minPolarAngle = 0;
-controls.maxPolarAngle = Math.PI;
+// To control zooming of 3d object
+// controls.noZoom = true //default false
 
-// controls the zooming distance
-controls.maxDistance = 4;
-controls.minDistance = 2;
+// when we rotate it continues to be in motion for some time.
+// controls.staticMoving = true //default false
+
+// decides the speed of damping or slowing down of rotation
+// controls.dynamicDampingFactor = 0.1
+
+// Controls maximum and minimum zoom of 3d object
+// controls.maxDistance = 4
+// controls.minDistance = 2
 
 const geometry = new THREE.BoxGeometry();
 const material = new THREE.MeshBasicMaterial({
@@ -111,6 +88,7 @@ document.body.appendChild(stats.dom);
 function animate() {
   requestAnimationFrame(animate);
 
+  // trackball controls needs to be updated in the animation loop before it will work
   controls.update();
 
   render();
