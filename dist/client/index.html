@@ -3,57 +3,40 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Three.js TypeScript Tutorials</title>
+    <title>
+      Three.js TypeScript Tutorials by Sean Bradley : https://sbcode.net/threejs
+    </title>
     <style>
       body {
         overflow: hidden;
         margin: 0px;
       }
-      /* creating custom canvas */
-      /* #c1 {
-        width: 200px;
-        height: 200px;
-      }
-      #c2 {
-        width: 200px;
-        height: 200px;
-      }
-      #c3 {
-        width: 200px;
-        height: 200px;
-      }
-      #c4 {
-        width: 200px;
-        height: 200px;
-      } */
-      .c {
-        width: 200px;
-        height: 200px;
-      }
-      #debug1 {
-        font-family: monospace;
-        font-size: larger;
+
+      #menuPanel {
         position: absolute;
+        background-color: rgba(255, 255, 255, 0.5);
+        top: 0px;
         left: 0px;
-        top: 50px;
-        border: 1px solid red;
-        width: 180px;
-        height: 310px;
-        color: white;
-        pointer-events: none;
+        width: 100%;
+        height: 100%;
+      }
+
+      #startButton {
+        height: 50px;
+        width: 200px;
+        margin: -25px -100px;
+        position: relative;
+        top: 50%;
+        left: 50%;
+        font-size: 32px;
       }
     </style>
   </head>
 
   <body>
-    <!-- creating custom canvas -->
-    <!-- <canvas id="c1" class="c"></canvas>
-    <canvas id="c2" class="c"></canvas>
-    <canvas id="c3" class="c"></canvas>
-    <canvas id="c4" class="c"></canvas> -->
-
-    <!-- For 3d Hierachy -->
-    <!-- <div id="debug1"></div> -->
+    <div id="menuPanel">
+      <button id="startButton">Click to Start</button>
+    </div>
     <script type="module" src="bundle.js"></script>
   </body>
 </html>
