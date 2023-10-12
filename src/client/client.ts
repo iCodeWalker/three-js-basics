@@ -1,15 +1,16 @@
-// Used to provide drag and drop interaction for your scene objects.
+// Allows us to change the transforms of an object within the scene.
+
+// Can attach the controls to the object, and then add the controls to the scene,
+// so that the interaction handles(moving object in the scene) are visible.
+
+// And then you can rescale, rotate and position the object within the scene.
 
 import * as THREE from "three";
-import { DragControls } from "three/examples/jsm/controls/DragControls";
+import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
-
-const light = new THREE.PointLight(0xffffff, 1000);
-light.position.set(10, 10, 10);
-scene.add(light);
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -17,45 +18,34 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.z = 3;
+camera.position.z = 2;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const geometry = new THREE.BoxGeometry();
-//const material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, transparent: true })
-//const cube: THREE.Mesh = new THREE.Mesh(geometry, material)
-//scene.add(cube)
+const material = new THREE.MeshNormalMaterial();
 
-// need to use different material on different objects, to have different effects on each cube.
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
 
-const material = [
-  new THREE.MeshPhongMaterial({ color: 0xff0000, transparent: true }),
-  new THREE.MeshPhongMaterial({ color: 0x00ff00, transparent: true }),
-  new THREE.MeshPhongMaterial({ color: 0x0000ff, transparent: true }),
-];
+const controls = new TransformControls(camera, renderer.domElement);
+controls.attach(cube);
+scene.add(controls);
 
-const cubes = [
-  new THREE.Mesh(geometry, material[0]),
-  new THREE.Mesh(geometry, material[1]),
-  new THREE.Mesh(geometry, material[2]),
-];
-cubes[0].position.x = -2;
-cubes[1].position.x = 0;
-cubes[2].position.x = 2;
-cubes.forEach((c) => scene.add(c));
-
-// we pass an array of objects that wants to have drag controls.
-// it use camera to know when the mouse is over an object or not.
-
-const controls = new DragControls(cubes, camera, renderer.domElement);
-controls.addEventListener("dragstart", function (event: any) {
-  event.object.material.opacity = 0.33;
-  console.log(event.object);
-});
-controls.addEventListener("dragend", function (event: any) {
-  event.object.material.opacity = 1;
+window.addEventListener("keydown", function (event) {
+  switch (event.code) {
+    case "KeyG":
+      controls.setMode("translate"); // moving left right up down
+      break;
+    case "KeyR":
+      controls.setMode("rotate");
+      break;
+    case "KeyS":
+      controls.setMode("scale");
+      break;
+  }
 });
 
 window.addEventListener("resize", onWindowResize, false);
@@ -72,13 +62,7 @@ document.body.appendChild(stats.dom);
 function animate() {
   requestAnimationFrame(animate);
 
-  cubes[0].rotation.x += 0.01;
-  cubes[0].rotation.y += 0.011;
-  cubes[1].rotation.x += 0.012;
-  cubes[1].rotation.y += 0.013;
-  cubes[2].rotation.x += 0.014;
-  cubes[2].rotation.y += 0.015;
-  //controls.update() // drag controls don't have an update method
+  // controls.update() // don't have an update method
 
   render();
 
