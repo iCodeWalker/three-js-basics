@@ -1,11 +1,11 @@
-// Allows us to change the transforms of an object within the scene.
+// An example of using a combination of
 
-// Can attach the controls to the object, and then add the controls to the scene,
-// so that the interaction handles(moving object in the scene) are visible.
-
-// And then you can rescale, rotate and position the object within the scene.
+// OrbitControls with DragControls, or
+// OrbitControls with TransformControls
 
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { DragControls } from "three/examples/jsm/controls/DragControls";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 
@@ -25,28 +25,58 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshNormalMaterial();
+const material = new THREE.MeshNormalMaterial({ transparent: true });
 
 const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
 
-const controls = new TransformControls(camera, renderer.domElement);
-controls.attach(cube);
-scene.add(controls);
+const orbitControls = new OrbitControls(camera, renderer.domElement);
+
+// Orbital control with drag control.
+// const dragControls = new DragControls([cube], camera, renderer.domElement);
+// dragControls.addEventListener("dragstart", function (event: any) {
+//   orbitControls.enabled = false; // this is done so drag event can happen.
+//   event.object.material.opacity = 0.33;
+// });
+// dragControls.addEventListener("dragend", function (event: any) {
+//   orbitControls.enabled = true; // this is done so orbital controller have the control agian.
+//   event.object.material.opacity = 1;
+// });
+
+// Orbital control with transform control.
+const transformControls = new TransformControls(camera, renderer.domElement);
+transformControls.attach(cube);
+transformControls.setMode("rotate");
+scene.add(transformControls);
+
+transformControls.addEventListener("dragging-changed", function (event) {
+  orbitControls.enabled = !event.value;
+  //dragControls.enabled = !event.value
+});
 
 window.addEventListener("keydown", function (event) {
-  switch (event.code) {
-    case "KeyG":
-      controls.setMode("translate"); // moving left right up down
+  switch (event.key) {
+    case "g":
+      transformControls.setMode("translate");
       break;
-    case "KeyR":
-      controls.setMode("rotate");
+    case "r":
+      transformControls.setMode("rotate");
       break;
-    case "KeyS":
-      controls.setMode("scale");
+    case "s":
+      transformControls.setMode("scale");
       break;
   }
 });
+
+const backGroundTexture = new THREE.CubeTextureLoader().load([
+  "img/px_eso0932a.jpg",
+  "img/nx_eso0932a.jpg",
+  "img/py_eso0932a.jpg",
+  "img/ny_eso0932a.jpg",
+  "img/pz_eso0932a.jpg",
+  "img/nz_eso0932a.jpg",
+]);
+scene.background = backGroundTexture;
 
 window.addEventListener("resize", onWindowResize, false);
 function onWindowResize() {
@@ -61,8 +91,6 @@ document.body.appendChild(stats.dom);
 
 function animate() {
   requestAnimationFrame(animate);
-
-  // controls.update() // don't have an update method
 
   render();
 
