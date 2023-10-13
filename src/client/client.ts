@@ -1,13 +1,19 @@
-// Used for loading 3d models saved in the Wavefront OBJ format.
+// MTL is the material information used by an OBJ file.
+// we can set the colours, specular, emissive, alpha, smoothness, image maps, and there coordinates.
 
-// There are many DCC (Digital Content Creation) tools that can create models in OBJ format.
+// Since it is a MeshPhongMaterial by default, we can only set properties affecting the meshPhongMaterial.
 
-// In Threejs, when importing an OBJ, the default material will be a white MeshPhongMaterial
-// so you will need at least one light in your scene.
+// we you create OBJ and MTL using Blender, then you can change
+// Base Color
+// Specular
+// Emission
+// Alpha
+// Smooth/Flat Shaded
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
 import Stats from "three/examples/jsm/libs/stats.module";
 
 const scene = new THREE.Scene();
@@ -32,51 +38,61 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-// by default Obj loader takes MeshPhongMaterial, but we can override it.
-const material = new THREE.MeshBasicMaterial({
-  color: 0x00ff00,
-  wireframe: true,
-});
-
-const material2 = new THREE.MeshNormalMaterial();
-
-const objLoader = new OBJLoader();
-objLoader.load(
-  //"models/cube.obj", // path of the model
-  "models/monkey.obj",
-  (object) => {
-    console.log(object);
-    //(object.children[0] as THREE.Mesh).material = material; // setting our created material on model
-
-    // this will loop through the object. object.traverse is used for looping
-    object.traverse(function (child) {
-      if ((child as THREE.Mesh).isMesh) {
-        (child as THREE.Mesh).material = material2;
+const mtlLoader = new MTLLoader();
+mtlLoader.load(
+  "models/monkey.mtl", // path to the model
+  (materials) => {
+    materials.preload();
+    console.log(materials);
+    const objLoader = new OBJLoader();
+    objLoader.setMaterials(materials); // to tell the obj loader to assgin material to the object.
+    objLoader.load(
+      "models/monkey.obj",
+      (object) => {
+        scene.add(object);
+      },
+      (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+      },
+      (error) => {
+        console.log("An error happened");
       }
-    });
-    scene.add(object);
-  }, // function runs after the object is loaded
+    );
+  }, // success callback runs when the file is fully downloaded.
   (xhr) => {
     console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-  }, // if we load a large file from internet this will run to show the progress
+  }, // Progress callback
   (error) => {
-    console.log(error);
-  } // in case of error
+    console.log("An error happened");
+  } // error callback
 );
 
-objLoader.load(
-  //"models/cube.obj", // path of the model
-  "models/cube.obj",
-  (object) => {
-    object.position.x = -2; // changes the position of the model
-    scene.add(object);
-  }, // function runs after the object is loaded
+mtlLoader.load(
+  "models/monkeyTextured.mtl", // path to the model
+  (materials) => {
+    materials.preload();
+    console.log(materials);
+    const objLoader = new OBJLoader();
+    objLoader.setMaterials(materials); // to tell the obj loader to assgin material to the object.
+    objLoader.load(
+      "models/monkeyTextured.obj",
+      (object) => {
+        scene.add(object);
+      },
+      (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+      },
+      (error) => {
+        console.log("An error happened");
+      }
+    );
+  }, // success callback runs when the file is fully downloaded.
   (xhr) => {
     console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-  }, // if we load a large file from internet this will run to show the progress
+  }, // Progress callback
   (error) => {
-    console.log(error);
-  } // in case of error
+    console.log("An error happened");
+  } // error callback
 );
 
 window.addEventListener("resize", onWindowResize, false);
