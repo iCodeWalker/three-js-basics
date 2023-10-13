@@ -1,16 +1,21 @@
-// An example of using a combination of
+// Used for loading 3d models saved in the Wavefront OBJ format.
 
-// OrbitControls with DragControls, or
-// OrbitControls with TransformControls
+// There are many DCC (Digital Content Creation) tools that can create models in OBJ format.
+
+// In Threejs, when importing an OBJ, the default material will be a white MeshPhongMaterial
+// so you will need at least one light in your scene.
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { DragControls } from "three/examples/jsm/controls/DragControls";
-import { TransformControls } from "three/examples/jsm/controls/TransformControls";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import Stats from "three/examples/jsm/libs/stats.module";
 
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
+
+const light = new THREE.PointLight(0xffffff, 1000);
+light.position.set(2.5, 7.5, 15);
+scene.add(light);
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -18,65 +23,61 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.z = 2;
+camera.position.z = 3;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshNormalMaterial({ transparent: true });
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
 
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
-
-const orbitControls = new OrbitControls(camera, renderer.domElement);
-
-// Orbital control with drag control.
-// const dragControls = new DragControls([cube], camera, renderer.domElement);
-// dragControls.addEventListener("dragstart", function (event: any) {
-//   orbitControls.enabled = false; // this is done so drag event can happen.
-//   event.object.material.opacity = 0.33;
-// });
-// dragControls.addEventListener("dragend", function (event: any) {
-//   orbitControls.enabled = true; // this is done so orbital controller have the control agian.
-//   event.object.material.opacity = 1;
-// });
-
-// Orbital control with transform control.
-const transformControls = new TransformControls(camera, renderer.domElement);
-transformControls.attach(cube);
-transformControls.setMode("rotate");
-scene.add(transformControls);
-
-transformControls.addEventListener("dragging-changed", function (event) {
-  orbitControls.enabled = !event.value;
-  //dragControls.enabled = !event.value
+// by default Obj loader takes MeshPhongMaterial, but we can override it.
+const material = new THREE.MeshBasicMaterial({
+  color: 0x00ff00,
+  wireframe: true,
 });
 
-window.addEventListener("keydown", function (event) {
-  switch (event.key) {
-    case "g":
-      transformControls.setMode("translate");
-      break;
-    case "r":
-      transformControls.setMode("rotate");
-      break;
-    case "s":
-      transformControls.setMode("scale");
-      break;
-  }
-});
+const material2 = new THREE.MeshNormalMaterial();
 
-const backGroundTexture = new THREE.CubeTextureLoader().load([
-  "img/px_eso0932a.jpg",
-  "img/nx_eso0932a.jpg",
-  "img/py_eso0932a.jpg",
-  "img/ny_eso0932a.jpg",
-  "img/pz_eso0932a.jpg",
-  "img/nz_eso0932a.jpg",
-]);
-scene.background = backGroundTexture;
+const objLoader = new OBJLoader();
+objLoader.load(
+  //"models/cube.obj", // path of the model
+  "models/monkey.obj",
+  (object) => {
+    console.log(object);
+    //(object.children[0] as THREE.Mesh).material = material; // setting our created material on model
+
+    // this will loop through the object. object.traverse is used for looping
+    object.traverse(function (child) {
+      if ((child as THREE.Mesh).isMesh) {
+        (child as THREE.Mesh).material = material2;
+      }
+    });
+    scene.add(object);
+  }, // function runs after the object is loaded
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+  }, // if we load a large file from internet this will run to show the progress
+  (error) => {
+    console.log(error);
+  } // in case of error
+);
+
+objLoader.load(
+  //"models/cube.obj", // path of the model
+  "models/cube.obj",
+  (object) => {
+    object.position.x = -2; // changes the position of the model
+    scene.add(object);
+  }, // function runs after the object is loaded
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+  }, // if we load a large file from internet this will run to show the progress
+  (error) => {
+    console.log(error);
+  } // in case of error
+);
 
 window.addEventListener("resize", onWindowResize, false);
 function onWindowResize() {
@@ -91,6 +92,8 @@ document.body.appendChild(stats.dom);
 
 function animate() {
   requestAnimationFrame(animate);
+
+  controls.update();
 
   render();
 
