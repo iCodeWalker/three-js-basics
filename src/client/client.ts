@@ -1,22 +1,18 @@
-// The FBX format is used to provide interoperability between digital content
-// creation applications and game engines such as Blender, Maya, Autodesk, Unity, Unreal
-// and many others. It supports many features such as 3D models, scene hierarchy, materials,
-// lighting, animations, bones and more.
+// we import a different FBX model, and we also import several animation clips for the model.
+// We then create buttons to smoothly transition the model between each animation clip.
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import Stats from "three/examples/jsm/libs/stats.module";
+import { GUI } from "dat.gui";
 
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
 
-const light = new THREE.PointLight(0xffffff, 50);
-light.position.set(0.8, 1.4, 1.0);
+const light = new THREE.PointLight(0xffffff, 1000);
+light.position.set(2.5, 7.5, 15);
 scene.add(light);
-
-const ambientLight = new THREE.AmbientLight();
-scene.add(ambientLight);
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -34,28 +30,92 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 1, 0);
 
-// const material = new THREE.MeshNormalMaterial();
+// For animations
+let mixer: THREE.AnimationMixer;
+let modelReady = false;
+const animationActions: THREE.AnimationAction[] = [];
+let activeAction: THREE.AnimationAction; // action that is running now.
+let lastAction: THREE.AnimationAction;
+const fbxLoader: FBXLoader = new FBXLoader();
 
-const fbxLoader = new FBXLoader();
 fbxLoader.load(
-  "models/Kachujin G Rosales.fbx",
+  "models/vanguard_t_choonyung.fbx",
   (object) => {
-    // making our object opaque as it was previously transparent
-    object.traverse(function (child) {
-      console.log(child.name); // we can use this to change different things like cast shadow etc on objects
-      if ((child as THREE.Mesh).isMesh) {
-        // we can also remove the material completely
-        // (child as THREE.Mesh).material = material;
-        if ((child as THREE.Mesh).material) {
-          (
-            (child as THREE.Mesh).material as THREE.MeshBasicMaterial
-          ).transparent = false;
-        }
-      }
-    });
-    // scaling the object as in fbx one unit is 1 cm, so our model is 100 times larger as our 1 unit is 1 m
+    // scaling
     object.scale.set(0.01, 0.01, 0.01);
+    mixer = new THREE.AnimationMixer(object);
+
+    // we give an action to the clipAction and it will create it in the memory
+    const animationAction = mixer.clipAction(
+      (object as THREE.Object3D).animations[0]
+    );
+    animationActions.push(animationAction);
+    animationsFolder.add(animations, "default");
+    activeAction = animationActions[0];
+
     scene.add(object);
+
+    // // add an animation from another file
+    fbxLoader.load(
+      "models/vanguard@samba.fbx",
+      (object) => {
+        console.log("loaded samba");
+
+        const animationAction = mixer.clipAction(
+          (object as THREE.Object3D).animations[0]
+        );
+        animationActions.push(animationAction);
+        animationsFolder.add(animations, "samba");
+
+        // add an animation from another file
+        fbxLoader.load(
+          "models/vanguard@bellydance.fbx",
+          (object) => {
+            console.log("loaded bellydance");
+            const animationAction = mixer.clipAction(
+              (object as THREE.Object3D).animations[0]
+            );
+            animationActions.push(animationAction);
+            animationsFolder.add(animations, "bellydance");
+
+            // add an animation from another file
+            fbxLoader.load(
+              "models/vanguard@goofyrunning.fbx",
+              (object) => {
+                console.log("loaded goofyrunning");
+                // (object as THREE.Object3D).animations[0].tracks.shift(); //delete the specific track that moves the object forward while running
+                //console.dir((object as THREE.Object3D).animations[0])
+                const animationAction = mixer.clipAction(
+                  (object as THREE.Object3D).animations[0]
+                );
+                animationActions.push(animationAction);
+                animationsFolder.add(animations, "goofyrunning");
+
+                modelReady = true;
+              },
+              (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+              },
+              (error) => {
+                console.log(error);
+              }
+            );
+          },
+          (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+          },
+          (error) => {
+            console.log(error);
+          }
+        );
+      },
+      (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+      },
+      (error) => {
+        console.log(error);
+      }
+    );
   },
   (xhr) => {
     console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
@@ -76,10 +136,45 @@ function onWindowResize() {
 const stats = new Stats();
 document.body.appendChild(stats.dom);
 
+const animations = {
+  default: function () {
+    setAction(animationActions[0]);
+  },
+  samba: function () {
+    setAction(animationActions[1]);
+  },
+  bellydance: function () {
+    setAction(animationActions[2]);
+  },
+  goofyrunning: function () {
+    setAction(animationActions[3]);
+  },
+};
+
+const setAction = (toAction: THREE.AnimationAction) => {
+  if (toAction != activeAction) {
+    lastAction = activeAction;
+    activeAction = toAction;
+    // lastAction.stop(); instantly stops the animation
+    lastAction.fadeOut(1); // fades out the action slowly
+    activeAction.reset();
+    activeAction.fadeIn(1); // fades in the action slowly
+    activeAction.play();
+  }
+};
+
+const gui = new GUI();
+const animationsFolder = gui.addFolder("Animations");
+animationsFolder.open();
+
+const clock = new THREE.Clock();
+
 function animate() {
   requestAnimationFrame(animate);
 
   controls.update();
+
+  if (modelReady) mixer.update(clock.getDelta());
 
   render();
 
