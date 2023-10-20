@@ -1,18 +1,19 @@
-// we import a different FBX model, and we also import several animation clips for the model.
-// We then create buttons to smoothly transition the model between each animation clip.
-
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "dat.gui";
 
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
 
-const light = new THREE.PointLight(0xffffff, 1000);
-light.position.set(2.5, 7.5, 15);
-scene.add(light);
+const light1 = new THREE.PointLight(0xffffff, 100);
+light1.position.set(2.5, 2.5, 2.5);
+scene.add(light1);
+
+const light2 = new THREE.PointLight(0xffffff, 100);
+light2.position.set(-2.5, 2.5, 2.5);
+scene.add(light2);
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -30,92 +31,88 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 1, 0);
 
-// For animations
 let mixer: THREE.AnimationMixer;
 let modelReady = false;
 const animationActions: THREE.AnimationAction[] = [];
-let activeAction: THREE.AnimationAction; // action that is running now.
+let activeAction: THREE.AnimationAction;
 let lastAction: THREE.AnimationAction;
-const fbxLoader: FBXLoader = new FBXLoader();
+const gltfLoader = new GLTFLoader();
 
-fbxLoader.load(
-  "models/vanguard_t_choonyung.fbx",
-  (object) => {
-    // scaling
-    object.scale.set(0.01, 0.01, 0.01);
-    mixer = new THREE.AnimationMixer(object);
+gltfLoader.load(
+  "models/vanguard.glb",
+  (gltf) => {
+    // gltf.scene.scale.set(.01, .01, .01)
 
-    // we give an action to the clipAction and it will create it in the memory
-    const animationAction = mixer.clipAction(
-      (object as THREE.Object3D).animations[0]
-    );
+    mixer = new THREE.AnimationMixer(gltf.scene);
+
+    const animationAction = mixer.clipAction((gltf as any).animations[0]);
     animationActions.push(animationAction);
     animationsFolder.add(animations, "default");
     activeAction = animationActions[0];
 
-    scene.add(object);
+    scene.add(gltf.scene);
 
-    // // add an animation from another file
-    fbxLoader.load(
-      "models/vanguard@samba.fbx",
-      (object) => {
-        console.log("loaded samba");
+    // //add an animation from another file
+    // gltfLoader.load(
+    //     'models/vanguard@samba.glb',
+    //     (gltf) => {
+    //         console.log('loaded samba')
+    //         const animationAction = mixer.clipAction(
+    //             (gltf as any).animations[0]
+    //         )
+    //         animationActions.push(animationAction)
+    //         animationsFolder.add(animations, 'samba')
 
-        const animationAction = mixer.clipAction(
-          (object as THREE.Object3D).animations[0]
-        );
-        animationActions.push(animationAction);
-        animationsFolder.add(animations, "samba");
+    //         //add an animation from another file
+    //         gltfLoader.load(
+    //             'models/vanguard@bellydance.glb',
+    //             (gltf) => {
+    //                 console.log('loaded bellydance')
+    //                 const animationAction = mixer.clipAction(
+    //                     (gltf as any).animations[0]
+    //                 )
+    //                 animationActions.push(animationAction)
+    //                 animationsFolder.add(animations, 'bellydance')
 
-        // add an animation from another file
-        fbxLoader.load(
-          "models/vanguard@bellydance.fbx",
-          (object) => {
-            console.log("loaded bellydance");
-            const animationAction = mixer.clipAction(
-              (object as THREE.Object3D).animations[0]
-            );
-            animationActions.push(animationAction);
-            animationsFolder.add(animations, "bellydance");
+    //                 //add an animation from another file
+    //                 gltfLoader.load(
+    //                     'models/vanguard@goofyrunning.glb',
+    //                     (gltf) => {
+    //                         console.log('loaded goofyrunning');
+    //                         (gltf as any).animations[0].tracks.shift() //delete the specific track that moves the object forward while running
+    //                         const animationAction = mixer.clipAction(
+    //                             (gltf as any).animations[0]
+    //                         )
+    //                         animationActions.push(animationAction)
+    //                         animationsFolder.add(animations, 'goofyrunning')
 
-            // add an animation from another file
-            fbxLoader.load(
-              "models/vanguard@goofyrunning.fbx",
-              (object) => {
-                console.log("loaded goofyrunning");
-                // (object as THREE.Object3D).animations[0].tracks.shift(); //delete the specific track that moves the object forward while running
-                //console.dir((object as THREE.Object3D).animations[0])
-                const animationAction = mixer.clipAction(
-                  (object as THREE.Object3D).animations[0]
-                );
-                animationActions.push(animationAction);
-                animationsFolder.add(animations, "goofyrunning");
-
-                modelReady = true;
-              },
-              (xhr) => {
-                console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-              },
-              (error) => {
-                console.log(error);
-              }
-            );
-          },
-          (xhr) => {
-            console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-          },
-          (error) => {
-            console.log(error);
-          }
-        );
-      },
-      (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-      },
-      (error) => {
-        console.log(error);
-      }
-    );
+    //                         modelReady = true
+    //                     },
+    //                     (xhr) => {
+    //                         console.log(
+    //                             (xhr.loaded / xhr.total) * 100 + '% loaded'
+    //                         )
+    //                     },
+    //                     (error) => {
+    //                         console.log(error)
+    //                     }
+    //                 )
+    //             },
+    //             (xhr) => {
+    //                 console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    //             },
+    //             (error) => {
+    //                 console.log(error)
+    //             }
+    //         )
+    //     },
+    //     (xhr) => {
+    //         console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    //     },
+    //     (error) => {
+    //         console.log(error)
+    //     }
+    // )
   },
   (xhr) => {
     console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
@@ -155,10 +152,10 @@ const setAction = (toAction: THREE.AnimationAction) => {
   if (toAction != activeAction) {
     lastAction = activeAction;
     activeAction = toAction;
-    // lastAction.stop(); instantly stops the animation
-    lastAction.fadeOut(1); // fades out the action slowly
+    //lastAction.stop()
+    lastAction.fadeOut(1);
     activeAction.reset();
-    activeAction.fadeIn(1); // fades in the action slowly
+    activeAction.fadeIn(1);
     activeAction.play();
   }
 };
