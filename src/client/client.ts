@@ -1,19 +1,26 @@
+// Raycasting allows you to create a vector from a 3D point in the scene,
+// and detect which object(s) the vector intersects.
+
+// The raycasting class is almost always used for mouse picking objects in the 3D scene.
+
+// We can set up the raycaster position and direction using the set or setFromCamera methods
+//  and then call its intersectObject or intersectObjects methods to tell us many things
+// about the scene objects that were intersected by the ray, including,
+
+// the distance of the intersection from the Raycaster position,
+// the position of the intersection in the 3D scene,
+// the face of the object that was intersected,
+// the direction of the faces normal,
+// the UV coordinate of the intersection on the face
+// and a reference to the intersected object itself.
+
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { GUI } from "dat.gui";
 
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
-
-const light1 = new THREE.PointLight(0xffffff, 100);
-light1.position.set(2.5, 2.5, 2.5);
-scene.add(light1);
-
-const light2 = new THREE.PointLight(0xffffff, 100);
-light2.position.set(-2.5, 2.5, 2.5);
-scene.add(light2);
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -21,94 +28,66 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(0.8, 1.4, 1.0);
+camera.position.z = 2;
 
 const renderer = new THREE.WebGLRenderer();
+//renderer.physicallyCorrectLights = true //deprecated
+renderer.useLegacyLights = false; //use this instead of setting physicallyCorrectLights=true property
+renderer.shadowMap.enabled = true;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.target.set(0, 1, 0);
 
-let mixer: THREE.AnimationMixer;
-let modelReady = false;
-const animationActions: THREE.AnimationAction[] = [];
-let activeAction: THREE.AnimationAction;
-let lastAction: THREE.AnimationAction;
-const gltfLoader = new GLTFLoader();
+// To draw a line
 
-gltfLoader.load(
-  "models/vanguard.glb",
-  (gltf) => {
-    // gltf.scene.scale.set(.01, .01, .01)
+// const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+// const points = new Array();
+// points.push(new THREE.Vector3(0, 0, 0));
+// points.push(new THREE.Vector3(0, 0, 0.25));
+// const geometry = new THREE.BufferGeometry().setFromPoints(points);
+// const line = new THREE.Line(geometry, material);
+// scene.add(line);
 
-    mixer = new THREE.AnimationMixer(gltf.scene);
+const arrowHelper = new THREE.ArrowHelper(
+  new THREE.Vector3(),
+  new THREE.Vector3(),
+  0.25,
+  0xffff00
+);
+scene.add(arrowHelper);
 
-    const animationAction = mixer.clipAction((gltf as any).animations[0]);
-    animationActions.push(animationAction);
-    animationsFolder.add(animations, "default");
-    activeAction = animationActions[0];
+const material = new THREE.MeshNormalMaterial();
 
-    scene.add(gltf.scene);
+// const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+const coneGeometry = new THREE.ConeGeometry(0.05, 0.2, 8);
 
-    // //add an animation from another file
-    gltfLoader.load(
-      "models/vanguard@samba.glb",
-      (gltf) => {
-        console.log("loaded samba");
-        const animationAction = mixer.clipAction((gltf as any).animations[0]);
-        animationActions.push(animationAction);
-        animationsFolder.add(animations, "samba");
+const raycaster = new THREE.Raycaster();
+const sceneMeshes: THREE.Object3D[] = [];
 
-        //add an animation from another file
-        gltfLoader.load(
-          "models/vanguard@bellydance.glb",
-          (gltf) => {
-            console.log("loaded bellydance");
-            const animationAction = mixer.clipAction(
-              (gltf as any).animations[0]
-            );
-            animationActions.push(animationAction);
-            animationsFolder.add(animations, "bellydance");
-
-            //add an animation from another file
-            gltfLoader.load(
-              "models/vanguard@goofyrunning.glb",
-              (gltf) => {
-                console.log("loaded goofyrunning");
-                (gltf as any).animations[0].tracks.shift(); //delete the specific track that moves the object forward while running
-                const animationAction = mixer.clipAction(
-                  (gltf as any).animations[0]
-                );
-                animationActions.push(animationAction);
-                animationsFolder.add(animations, "goofyrunning");
-
-                modelReady = true;
-              },
-              (xhr) => {
-                console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-              },
-              (error) => {
-                console.log(error);
-              }
-            );
-          },
-          (xhr) => {
-            console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-          },
-          (error) => {
-            console.log(error);
-          }
-        );
-      },
-      (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-      },
-      (error) => {
-        console.log(error);
+const loader = new GLTFLoader();
+loader.load(
+  "models/monkey_textured.glb",
+  function (gltf) {
+    gltf.scene.traverse(function (child) {
+      if ((child as THREE.Mesh).isMesh) {
+        const m = child as THREE.Mesh;
+        m.receiveShadow = true;
+        m.castShadow = true;
+        (m.material as THREE.MeshStandardMaterial).flatShading = true;
+        sceneMeshes.push(m);
       }
-    );
+      if ((child as THREE.Light).isLight) {
+        const l = child as THREE.SpotLight;
+        l.castShadow = true;
+        l.shadow.bias = -0.003;
+        l.shadow.mapSize.width = 2048;
+        l.shadow.mapSize.height = 2048;
+      }
+    });
+    scene.add(gltf.scene);
+    // sceneMeshes.push(gltf.scene)
   },
   (xhr) => {
     console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
@@ -126,48 +105,87 @@ function onWindowResize() {
   render();
 }
 
+renderer.domElement.addEventListener("dblclick", onDoubleClick, false);
+renderer.domElement.addEventListener("mousemove", onMouseMove, false);
+
+const mouse = new THREE.Vector2();
+
+function onMouseMove(event: MouseEvent) {
+  mouse.set(
+    (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+    -(event.clientY / renderer.domElement.clientHeight) * 2 + 1
+  );
+
+  console.log(mouse);
+
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects(sceneMeshes, false);
+
+  if (intersects.length > 0) {
+    // console.log(sceneMeshes.length + " " + intersects.length)
+    // console.log(intersects[0])
+    // console.log(intersects[0].object.userData.name + " " + intersects[0].distance + " ")
+    // console.log((intersects[0].face as THREE.Face).normal)
+
+    // Draws a line normal to the surface of the object.
+
+    // line.position.set(0, 0, 0);
+    // line.lookAt((intersects[0].face as THREE.Face).normal);
+    // line.position.copy(intersects[0].point);
+
+    const n = new THREE.Vector3();
+    n.copy((intersects[0].face as THREE.Face).normal);
+    //// When the object changes it's direction or place we need transformDirection to have the updated value
+    n.transformDirection(intersects[0].object.matrixWorld);
+
+    arrowHelper.setDirection(n);
+    arrowHelper.position.copy(intersects[0].point);
+  }
+}
+
+function onDoubleClick(event: MouseEvent) {
+  mouse.set(
+    (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+    -(event.clientY / renderer.domElement.clientHeight) * 2 + 1
+  );
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects(sceneMeshes, false);
+
+  if (intersects.length > 0) {
+    const n = new THREE.Vector3();
+    n.copy((intersects[0].face as THREE.Face).normal);
+    n.transformDirection(intersects[0].object.matrixWorld);
+
+    // const cube = new THREE.Mesh(boxGeometry, material);
+    const cube = new THREE.Mesh(coneGeometry, material);
+
+    cube.lookAt(n);
+    // to rotate the cone geometry as it is pointing in wrong direction.
+    cube.rotateX(Math.PI / 2);
+    cube.position.copy(intersects[0].point);
+    // how much the cube should be inside the monkey object
+    cube.position.addScaledVector(n, 0.1);
+
+    scene.add(cube);
+    // to have ability to add boxes on other boxes we can add cubes to the scene meshes
+    sceneMeshes.push(cube);
+  }
+}
+
 const stats = new Stats();
 document.body.appendChild(stats.dom);
-
-const animations = {
-  default: function () {
-    setAction(animationActions[0]);
-  },
-  samba: function () {
-    setAction(animationActions[1]);
-  },
-  bellydance: function () {
-    setAction(animationActions[2]);
-  },
-  goofyrunning: function () {
-    setAction(animationActions[3]);
-  },
-};
-
-const setAction = (toAction: THREE.AnimationAction) => {
-  if (toAction != activeAction) {
-    lastAction = activeAction;
-    activeAction = toAction;
-    //lastAction.stop()
-    lastAction.fadeOut(1);
-    activeAction.reset();
-    activeAction.fadeIn(1);
-    activeAction.play();
-  }
-};
-
-const gui = new GUI();
-const animationsFolder = gui.addFolder("Animations");
-animationsFolder.open();
-
-const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
 
   controls.update();
 
-  if (modelReady) mixer.update(clock.getDelta());
+  // When the object changes it's direction or place the normal dosen't gets updated
+  // if (sceneMeshes.length > 1) {
+  //   sceneMeshes[0].rotation.x += 0.002;
+  // }
 
   render();
 
